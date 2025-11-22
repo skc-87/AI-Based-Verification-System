@@ -35,22 +35,34 @@ const Login = () => {
         password,
       });
 
-      const { token, role, name, ...user } = response.data;
+      const { token, user, student } = response.data;
 
       if (!token) {
         toast.error("Authentication failed. Please try again.", toastConfig);
         return;
       }
 
+      // Store ALL user data including student details
       sessionStorage.setItem("authToken", token);
-      sessionStorage.setItem("role", role);
       sessionStorage.setItem("user", JSON.stringify(user));
-      sessionStorage.setItem("userName", name);
+      sessionStorage.setItem("student", JSON.stringify(student));
+
+      console.log("Login successful - User:", user);
+      console.log("Student data:", student);
+
+      // Show warning if student profile is missing
+      if (user.role === "student" && !student) {
+        console.warn("Student profile not found for user:", user._id);
+        toast.warning("Student profile not found. Please contact support.", {
+          ...toastConfig,
+          autoClose: 4000
+        });
+      }
 
       toast.success("Login successful!", toastConfig);
 
       setTimeout(() => {
-        if (role === "teacher") {
+        if (user.role === "teacher") {
           navigate("/teacher-dashboard");
         } else {
           navigate("/upload");
@@ -164,7 +176,7 @@ const Login = () => {
 
         <div className="mt-6 text-center">
           <p className="text-gray-600">
-          Don&apos;t have an account?{" "}
+            Don&apos;t have an account?{" "}
             <motion.span
               whileHover={{ scale: 1.05 }}
               onClick={() => navigate("/signup")}

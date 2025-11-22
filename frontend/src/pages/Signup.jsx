@@ -2,13 +2,16 @@ import { useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 
 const Signup = () => {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState("student");
+  const [mobile_number, setMobileNumber] = useState("");
+  const [department, setDepartment] = useState("");
+  const [year, setYear] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
@@ -22,24 +25,48 @@ const Signup = () => {
   };
 
   const handleSignup = async () => {
+    // Basic validation for all users
     if (!name || !email || !password) {
       toast.error("Please fill in all fields", toastConfig);
       return;
     }
 
+    // Additional validation for students
+    if (role === "student") {
+      if (!mobile_number || !department || !year) {
+        toast.error("Please fill in all student details", toastConfig);
+        return;
+      }
+    }
+
     setLoading(true);
 
     try {
-      await axios.post("http://localhost:5000/api/auth/register", {
+      // Prepare data object
+      const signupData = {
         name,
         email,
         password,
         role,
-      });
+      };
+
+      // Add student-specific fields only if role is student
+      if (role === "student") {
+        signupData.mobile_number = mobile_number;
+        signupData.department = department;
+        signupData.year = parseInt(year); // Convert to number
+      }
+
+      console.log("Sending data:", signupData); // Debug log
+
+      const response = await axios.post("http://localhost:5000/api/auth/register", signupData);
+
+      console.log("Response:", response.data); // Debug log
 
       toast.success("Signup successful! Redirecting to login...", toastConfig);
       setTimeout(() => navigate("/login"), 1000);
     } catch (error) {
+      console.error("Signup error:", error); // Debug log
       const errorMessage = error.response?.data?.message || "Signup failed";
       toast.error(errorMessage, toastConfig);
     } finally {
@@ -52,6 +79,23 @@ const Signup = () => {
       handleSignup();
     }
   };
+
+  // Department options
+  const departments = [
+    "Computer Science",
+    "Electrical Engineering", 
+    "Mechanical Engineering",
+    "Civil Engineering",
+    "Electronics & Communication",
+    "Information Technology",
+    "Chemical Engineering",
+    "Aerospace Engineering",
+    "Biotechnology",
+    "Other"
+  ];
+
+  // Year options
+  const years = [1, 2, 3, 4, 5];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 flex items-center justify-center p-4">
@@ -136,6 +180,70 @@ const Signup = () => {
               />
             </motion.div>
           </div>
+
+          {/* Student-specific fields - Only show when role is student */}
+          <AnimatePresence>
+            {role === "student" && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.3 }}
+                className="space-y-4 overflow-hidden"
+              >
+                <div className="border-t pt-4">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-3">Student Information</h3>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Mobile Number</label>
+                    <motion.div whileHover={{ scale: 1.01 }}>
+                      <input
+                        type="tel"
+                        placeholder="1234567890"
+                        value={mobile_number}
+                        onChange={(e) => setMobileNumber(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                        onKeyDown={handleKeyDown}
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200"
+                        maxLength={10}
+                      />
+                    </motion.div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Department</label>
+                    <motion.div whileHover={{ scale: 1.01 }}>
+                      <select
+                        value={department}
+                        onChange={(e) => setDepartment(e.target.value)}
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 appearance-none bg-white"
+                      >
+                        <option value="">Select Department</option>
+                        {departments.map((dept) => (
+                          <option key={dept} value={dept}>{dept}</option>
+                        ))}
+                      </select>
+                    </motion.div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Year</label>
+                    <motion.div whileHover={{ scale: 1.01 }}>
+                      <select
+                        value={year}
+                        onChange={(e) => setYear(e.target.value)}
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 appearance-none bg-white"
+                      >
+                        <option value="">Select Year</option>
+                        {years.map((yr) => (
+                          <option key={yr} value={yr}>Year {yr}</option>
+                        ))}
+                      </select>
+                    </motion.div>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           <motion.button
             onClick={handleSignup}
